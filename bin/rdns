@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+import itertools, sys
+
+from rdns.rdns import *
+from rdns.IPy import IP
+
+from twisted.internet import defer, reactor
+
+@defer.inlineCallbacks
+def main():
+    try:
+        ips = []
+        for addr in sys.argv[1:]:
+            try:
+                ips.extend(IP(addr))
+            except ValueError:
+                try:
+                    ips.extend(IP(addr, make_net=True))
+                except ValueError:
+                    suffix = ''
+                    if '/' in addr:
+                        print addr
+                        addr, suffix = addr.split('/')
+                        suffix = '/' + suffix
+                    addrs = yield resolveAs(addr)
+                    if not addrs:
+                        sys.stderr.write("unable to resolve hostname %s\n" % addr)
+                        return
+                    
+                    localIps = []
+                    for addr in addrs:
+                        localIps.extend(IP(addr + suffix, make_net=True))
+                    ips.extend(sorted(set(localIps)))
+    
+        for ip, lookup in resolvePTRs(ips):
+            try:
+                result = yield lookup
+                print ip, ' '.join(result)
+            except Exception, e:
+                print ip, "\t# %r" % e
+    finally:
+        reactor.stop()
+
+reactor.callLater(0, main)
+reactor.run()
