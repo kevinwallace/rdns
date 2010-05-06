@@ -1,16 +1,21 @@
 #!/usr/bin/env python
-import itertools, sys
+import itertools, sys, optparse
 
 from rdns.rdns import *
 from rdns.IPy import IP
 
 from twisted.internet import defer, reactor
 
+parser = optparse.OptionParser()
+parser.add_option("-a", "--all",
+                  action="store_true", dest="show_all",
+                  help="show all addresses (even those without reverse names)")
+
 @defer.inlineCallbacks
-def main():
+def main(options, args):
     try:
         ips = []
-        for addr in sys.argv[1:]:
+        for addr in args:
             try:
                 ips.extend(IP(addr))
             except ValueError:
@@ -35,11 +40,12 @@ def main():
         for ip, lookup in resolvePTRs(ips):
             try:
                 result = yield lookup
-                print ip, ' '.join(result)
+                if result or options.show_all:
+                    print ip, ' '.join(result)
             except Exception, e:
                 print ip, "\t# %r" % e
     finally:
         reactor.stop()
 
-reactor.callLater(0, main)
+reactor.callLater(0, main, *parser.parse_args())
 reactor.run()
