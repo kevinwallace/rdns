@@ -18,13 +18,11 @@ func main() {
 			for _, ipnet := range ipnets {
 				ip := ipnet.IP
 				for ipnet.Contains(ip) {
-					line := ip.String() + "\t"
-					names, err := net.LookupAddr(ip.String())
-					line += strings.Join(names, " ")
-					if err != nil {
-						line += fmt.Sprintf(" # %s", err)
+					if names, err := net.LookupAddr(ip.String()); err != nil {
+						fmt.Fprintf(os.Stderr, "%s\t# error: %s\n", ip, err)
+					} else {
+						fmt.Printf("%s\t%s\n", ip, strings.Join(names, " "))
 					}
-					fmt.Println(line)
 					ip = next(ip)
 				}
 			}
