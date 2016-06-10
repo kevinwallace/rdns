@@ -77,7 +77,7 @@ func resolveArg(arg string) ([]net.IPNet, error) {
 }
 
 func resolveHost(host string, canLookup bool) ([]net.IP, error) {
-	ip := parseIP(host)
+	ip := net.ParseIP(host)
 	if ip != nil {
 		return []net.IP{ip}, nil
 	}
@@ -85,15 +85,4 @@ func resolveHost(host string, canLookup bool) ([]net.IP, error) {
 		return net.LookupIP(host)
 	}
 	return nil, fmt.Errorf("can't parse IP")
-}
-
-func parseIP(s string) net.IP {
-	ip := net.ParseIP(s)
-	// net.ParseIP provides no way to distinguish "::ffff:1.2.3.4" from "1.2.3.4";
-	// this attempts to do so by assuming any IPv6 address contains a ':'.
-	// I think this is an accurate heuristic, but I am not sure of it.
-	if !strings.Contains(s, ":") {
-		ip = ip.To4()
-	}
-	return ip
 }
